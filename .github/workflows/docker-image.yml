@@ -1,0 +1,61 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "master", "develop" ]
+  pull_request:
+    branches: [ "master", "develop" ]
+
+jobs:
+
+  build:
+    name: Build And Push Image
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0 # required by gitversion
+        
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v0.9.13
+      with:
+        versionSpec: '5.x'
+        
+    - name: Determine Version
+      uses: gittools/actions/gitversion/execute@v0.9.13
+      
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+    
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag mharris867/jenkinsmsbuildagent:${{ runner.os }}${{ env.GITVERSION_SEMVER }} --tag mharris867/jenkinsmsbuildagent:latest
+      
+    - name: Push Docker Image Version
+      run: | 
+        docker push mharris867/jenkinsmsbuildagent:${{ runner.os }}${{ env.GITVERSION_SEMVER }}
+    - name: Push Docker Image Latest
+      if: startsWith(matrix.os, 'windows') != true
+      run: | 
+        docker push mharris867/jenkinsmsbuildagent:latest
+        
+    - name: Set Release Candidate Variables
+      shell: pwsh
+      run: |
+        if ($env:GITHUB_REF_NAME -Like '*master*' -or $env:GITHUB_REF_NAME -Like '*main*' ) {$prerelease = "false"}
+        else {$prerelease = "true"}
+        Add-Content -Path $env:GITHUB_ENV -Value "prerelease=$prerelease"
+        Write-Host "Pre-release Set To: $prerelease"
+        
+    - name: Create Release
+      uses: ncipollo/release-action@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        generateReleaseNotes: "true"
+        prerelease: ${{ env.prerelease }}
+        tag: ${{ runner.os }}-${{ env.GITVERSION_SEMVER }}
+        name: ${{ runner.os }}-${{ env.GITVERSION_INFORMATIONALVERSION }}
+        owner: ${{ env.GITHUB_REPOSITORY_OWNER }}
+        commit: ${{ env.GITHUB_SHA }}
