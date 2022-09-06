@@ -37,7 +37,6 @@ jobs:
       run: | 
         docker push mharris867/jenkinsmsbuildagent:${{ runner.os }}${{ env.GITVERSION_SEMVER }}
     - name: Push Docker Image Latest
-      if: startsWith(matrix.os, 'windows') != true
       run: | 
         docker push mharris867/jenkinsmsbuildagent:latest
         
