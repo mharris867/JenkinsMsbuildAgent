@@ -24,6 +24,7 @@ RUN powershell.exe [Environment]::SetEnvironmentVariable('PATH', [Environment]::
 # Set Jenkins user
 ARG user=jenkins
 USER ${user}
+RUN cmd.exe "C:\\Program` Files\\Microsoft` Visual` Studio\\2022\\Enterprise\\Common7\\Tools\\VsDevCmd.bat"
 
 # This entry point starts the developer command prompt and launches the PowerShell shell.
-ENTRYPOINT ["C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Common7\\Tools\\VsDevCmd.bat", "&&", "powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]
+ENTRYPOINT ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]
